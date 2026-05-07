@@ -1,0 +1,12 @@
+{
+  "name": "tikkit",
+  "description": "AI-powered ticket creation toolkit. Turns text requests, Figma designs, Stitch UI exports, and code-quality audits into structured implementation tickets in specs/tickets/.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Lampshady",
+    "email": "lampshady24@gmail.com"
+  },
+  "homepage": "https://github.com/TheLampshady/tikkit",
+  "repository": "https://github.com/TheLampshady/tikkit",
+  "license": "MIT"
+}

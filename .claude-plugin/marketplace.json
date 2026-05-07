@@ -1,0 +1,14 @@
+{
+  "name": "tikkit-marketplace",
+  "owner": {
+    "name": "Lampshady",
+    "email": "lampshady24@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "tikkit",
+      "source": "./",
+      "description": "AI-powered ticket creation toolkit. Turns text requests, Figma designs, Stitch UI exports, and code-quality audits into structured implementation tickets in specs/tickets/."
+    }
+  ]
+}
