@@ -6,13 +6,17 @@ The slug for every ticket is `<foundation-slug>-<ticket-type-suffix>`, e.g. `aut
 
 ## Index
 
-1. [`foundation-bloat`](#1-foundation-bloat) — god class / file too large
-2. [`foundation-untested-api`](#2-foundation-untested-api) — public surface without tests
-3. [`foundation-wrong-abstraction`](#3-foundation-wrong-abstraction) — params/conditionals growing
-4. [`foundation-shotgun-surgery`](#4-foundation-shotgun-surgery) — single change rippling across consumers
-5. [`foundation-coupling`](#5-foundation-coupling) — efferent coupling or instability rising
-6. [`foundation-stale-review`](#6-foundation-stale-review) — registry review overdue
-7. [`foundation-deprecation-candidate`](#7-foundation-deprecation-candidate) — consumers trending to zero
+| # | Ticket type | Trigger | Why it matters |
+|---|-------------|---------|----------------|
+| 1 | [`foundation-bloat`](#1-foundation-bloat) | registry-driven (`Health: hotspot` + size) | god class / file too large |
+| 2 | [`foundation-untested-api`](#2-foundation-untested-api) | scan-driven | public surface without tests |
+| 3 | [`foundation-wrong-abstraction`](#3-foundation-wrong-abstraction) | registry-driven (`Health: hotspot` + arity growth) | params/conditionals growing |
+| 4 | [`foundation-shotgun-surgery`](#4-foundation-shotgun-surgery) | scan-driven | single change rippling across consumers |
+| 5 | [`foundation-coupling`](#5-foundation-coupling) | scan-driven | efferent coupling or instability rising |
+| 6 | [`foundation-stale-review`](#6-foundation-stale-review) | registry-driven (`Last Reviewed > 90d`) | registry review overdue |
+| 7 | [`foundation-deprecation-candidate`](#7-foundation-deprecation-candidate) | registry-driven (`Consumers < 2`) | consumers trending to zero |
+
+Registry-driven types pull their trigger from a field already in `FOUNDATIONS.md`; scan-driven types are computed by foundationtik against the foundation's `Path`. See `detection-heuristics.md` for the per-type recipes.
 
 Each template uses these placeholders:
 - `<Foundation>` — the human-readable foundation name (e.g. "Auth foundation")
@@ -24,7 +28,7 @@ Each template uses these placeholders:
 
 ## 1. `foundation-bloat`
 
-**Fires when:** LOC > 500 OR public-method/export count > 20 on the foundation's primary file.
+**Fires when:** Registry row has `Health: hotspot` AND the file clears the bloat threshold (LOC > 500 OR public-method/export count > 20).
 
 **Why it matters:** A foundation that has grown into a god-object becomes the bottleneck the rest of the system can't refactor around. Splitting it lets parallel work resume.
 
@@ -33,10 +37,11 @@ Each template uses these placeholders:
 
 ## Overview
 
-<Foundation> at `<path>` has grown to a size where it's hard to reason about as a single unit. This ticket splits it into smaller, single-responsibility units so future work on this foundation can proceed in parallel without merge churn.
+<Foundation> at `<path>` has grown to a size where it's hard to reason about as a single unit. The registry has flagged it as a hotspot. This ticket splits it into smaller, single-responsibility units so future work on this foundation can proceed in parallel without merge churn.
 
 ## Evidence
 
+- Registry signal: `Health: hotspot` (FOUNDATIONS.md, last sync `<date>`)
 - LOC: **<n>** (threshold: 500). Command: `wc -l <path>`
 - Public methods/exports: **<n>** (threshold: 20). Command: `<heuristic from detection-heuristics.md>`
 - Top-3 longest methods (LOC):
@@ -140,7 +145,7 @@ Single revert of the rename PR restores the original layout. Earlier extraction 
 
 ## 3. `foundation-wrong-abstraction`
 
-**Fires when:** Parameter count or conditional count on the foundation's primary file has grown over the last N commits.
+**Fires when:** Registry row has `Health: hotspot` AND parameter count or conditional count on the foundation's primary file has grown over the last N commits (i.e. the hotspot signal is *not* explained by raw size — see `foundation-bloat` for that case).
 
 **Why it matters:** Sandi Metz's observation: "duplication is far cheaper than the wrong abstraction." An abstraction accreting parameters and conditionals is leaking the differences it was supposed to hide. Inlining and re-extracting is usually cheaper than continuing to bend the existing shape.
 
@@ -149,12 +154,13 @@ Single revert of the rename PR restores the original layout. Earlier extraction 
 
 ## Overview
 
-<Foundation> at `<path>` is showing classic wrong-abstraction symptoms: callers keep adding parameters and conditionals to bend it to new use cases. This ticket inlines the abstraction back into its consumers and lets a better-fitting shape emerge.
+<Foundation> at `<path>` is showing classic wrong-abstraction symptoms: the registry has flagged it as a hotspot, and callers keep adding parameters and conditionals to bend it to new use cases. This ticket inlines the abstraction back into its consumers and lets a better-fitting shape emerge.
 
 > **Note:** This is a refactor with no behavioural change intended. If the codebase is mid-feature work that depends on this abstraction, sequence accordingly.
 
 ## Evidence
 
+- Registry signal: `Health: hotspot` (FOUNDATIONS.md, last sync `<date>`)
 - Foundation path: `<path>`
 - Parameter count growth: from `<n_old>` to `<n_new>` over last <N> commits.
 - Conditional growth: `<n_old>` → `<n_new>` `if`/`switch` statements over last <N> commits.
@@ -326,7 +332,7 @@ Revert the foundation refactor and the consumer follow-ons together. Coupling ch
 
 ## 6. `foundation-stale-review`
 
-**Fires when:** `last reviewed` in the registry is older than 90 days AND `git log` shows touches to the foundation path within that window.
+**Fires when:** `Last Reviewed` in the registry row is older than 90 days AND `git log` shows touches to the foundation path within that window.
 
 **Why it matters:** The registry says "we last looked at this on date X." If the code has changed since then, the registry's claims about public API, consumers, and dependencies may be lying. A fresh review either confirms the registry or surfaces what changed.
 
@@ -339,6 +345,7 @@ Revert the foundation refactor and the consumer follow-ons together. Coupling ch
 
 ## Evidence
 
+- Registry signal: `Last Reviewed` field (FOUNDATIONS.md row for `<Foundation>`)
 - Foundation path: `<path>`
 - Last reviewed (per `FOUNDATIONS.md`): `<date>` (<N> days ago, threshold 90)
 - Commits touching `<path>` since last review:
@@ -384,7 +391,7 @@ This ticket is metadata-only (registry edits and follow-up tickets). Rollback is
 
 ## 7. `foundation-deprecation-candidate`
 
-**Fires when:** An active row has consumer count trending toward zero (Ca < 2).
+**Fires when:** Registry row has `Status: active` AND `Consumers` count < 2.
 
 **Why it matters:** A foundation with one or zero consumers is no longer a foundation. Either inline it into the remaining consumer or remove it. Either way, the registry should stop listing it as active.
 
@@ -397,6 +404,7 @@ This ticket is metadata-only (registry edits and follow-up tickets). Rollback is
 
 ## Evidence
 
+- Registry signal: `Status: active`, `Consumers: <n>` (FOUNDATIONS.md row for `<Foundation>`)
 - Foundation path: `<path>`
 - Afferent coupling Ca (consumers): <n> (threshold for deprecation: < 2)
 - Current consumers:

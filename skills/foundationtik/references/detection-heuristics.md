@@ -2,11 +2,25 @@
 
 Shell-only methods for computing each of the seven signals. No SonarQube, no custom collectors — just `git`, `grep`, `wc`, and shell pipelines.
 
-Every heuristic has known blind spots. The skill should flag low-confidence detections in the resulting ticket's Evidence section so the reader can verify before acting. Each section below names the limits explicitly.
+## Registry-first
+
+`FOUNDATIONS.md` (produced by repokit's dockit) **already triggers four of the seven ticket types**. For those, the registry field decides whether to fire — the heuristics below are used only to fill the ticket's Evidence section with concrete numbers, not to recompute the trigger.
+
+| Ticket type | Trigger source | Heuristic role |
+|-------------|----------------|----------------|
+| `foundation-bloat` | `Health: hotspot` (registry) | Run §1 to populate Evidence (LOC, method count) |
+| `foundation-wrong-abstraction` | `Health: hotspot` (registry) | Run §3 to populate Evidence (param/conditional growth) |
+| `foundation-stale-review` | `Last Reviewed > 90d` AND code touched (registry + git) | Run §6 to confirm and list commits |
+| `foundation-deprecation-candidate` | `Consumers < 2` (registry) | Run §7 to verify with re-export-aware search before recommending deletion |
+| `foundation-untested-api` | (no registry trigger) | Run §2 to fire AND populate Evidence |
+| `foundation-shotgun-surgery` | (no registry trigger) | Run §4 to fire AND populate Evidence |
+| `foundation-coupling` | (no registry trigger) | Run §5 to fire AND populate Evidence; reuse registry `Consumers` count as `Ca` |
+
+Every heuristic has known blind spots. Flag low-confidence detections in the resulting ticket's Evidence section so the reader can verify before acting — the limits are documented per section below.
 
 ## Conventions
 
-- `<path>` — the foundation's primary file or directory (e.g. `src/auth/index.ts`, `apps/api/src/cache.py`).
+- `<path>` — the foundation's primary file or directory, taken from the registry row's `Path` field (e.g. `src/auth/index.ts`, `apps/api/src/cache.py`).
 - `<window>` — a git range or `--since` window. Defaults: 30 commits or `--since='90 days ago'` unless the user overrides.
 - `<consumer-glob>` — the project's source root for grepping consumers (e.g. `src/`, `apps/`).
 - Shell examples assume bash/zsh on a POSIX system. Adjust quoting for fish/PowerShell as needed.

@@ -37,39 +37,77 @@ If a foundation row appears stale (e.g. consumer count trending differently than
 
 1. **Locate `FOUNDATIONS.md`.** Search the project root, `docs/`, and `docs/architecture/`.
 2. **If missing, halt:**
-   > FOUNDATIONS.md not found. Run `/repokit:dockit` to generate it, then re-run this skill.
+   > FOUNDATIONS.md not found. Run `/repokit:dockit` to generate it, then re-run this skill. (dockit produces the registry only on medium/large projects — small projects don't need foundationtik.)
 
-   Don't try to scan the codebase blind — without the registry, foundationtik has no opinion on what counts as "foundational."
-3. **Parse the registry into rows.** Each row should expose at least: `name`, `type`, `path`, `owner`, `public API`, `consumers`, `depends-on`, `status`, `last reviewed`. Tolerate variations in column order or extra fields — the parser should be forgiving.
-4. **Read `specs/backlog.md`.** Build a set of existing `[foundationtik]` tickets, keyed by `(foundation-slug, ticket-type-suffix)`. This is the duplicate-suppression set used in Phase 4.
+   Don't scan the codebase blind. Without the registry, foundationtik has no opinion on what counts as foundational.
+3. **Parse the registry.** `FOUNDATIONS.md` is a dockit-generated catalog with three sections:
+   - **Catalog table** — one row per foundation: `Name | Type | Path | Owner | Status | Health | Consumers | Last Reviewed`. **Row order is the ranking.** dockit sorts by `foundation_score` (fan-in × cross-feature × stability), so the top of the table is the most-foundational code. foundationtik preserves that order when writing tickets to the backlog.
+   - **Per-foundation deep-dive sections** — one per row, with: Purpose, Public API, Invariants, Consumers table, Dependencies, Test coverage, Refactor triggers, Change checklist.
+   - **Findings section** — separate from the catalog. Lists Hotspots, Hidden foundations, Pretenders. Hidden foundations and pretenders are **not foundationtik's responsibility** — dockit and the human reviewer handle them. Hotspots are also marked on the catalog row with `health: hotspot`, so foundationtik picks them up there.
+
+   Field values to know:
+
+   | Field | Values | Notes |
+   |-------|--------|-------|
+   | `Status` | `active` · `experimental` · `deprecated` · `sunset` | Default scope = `active` (and `experimental` on opt-in). |
+   | `Health` | `healthy` · `hotspot` · `unknown` | `hotspot` is dockit's pre-classification of a refactor target. `unknown` = low-confidence detection — propagate to derived tickets. |
+   | `Type` | `service` · `abstraction` · `primitive` · `design-system` | Used for ticket framing only. |
+
+4. **Read `specs/backlog.md`.** Build a set of existing `[foundationtik]` tickets keyed by `(foundation-slug, ticket-type-suffix)` for duplicate suppression in Phase 4.
 
 ### Phase 2 — Scope
 
 Ask the user one question, then proceed:
 
-> Which foundations? `all` (default) | `<foundation-name>` | a comma-separated list.
+> Which foundations? `all active` (default) · `hotspots only` · `<foundation-name>` · a comma-separated list.
 
 Default behaviour:
-- `all` iterates over every active row.
-- Skip rows with `status: deprecated` unless the user explicitly opts them in (e.g. they ask for tickets to *finish* deprecating something).
-
-If the user names a foundation that isn't in the registry, list the available rows and ask which they meant.
+- `all active` iterates over rows with `status: active`.
+- `hotspots only` filters to `health: hotspot` rows — the highest-leverage subset.
+- Skip `status: deprecated` rows unless the user opts them in (e.g. they want tickets to *finish* a deprecation).
+- If the user names a foundation that isn't in the registry, list the available rows and ask.
 
 ### Phase 3 — Per-foundation scan
 
-For each in-scope row, run the seven checks below. **Each check that fires produces one ticket.** See `references/detection-heuristics.md` for shell-only ways to compute each signal and the limits of each heuristic.
+For each in-scope row, the seven checks split into two groups: **registry-driven** (the trigger is already a field in `FOUNDATIONS.md` — no re-scan needed to *fire* the check) and **scan-driven** (foundationtik computes the signal because the registry doesn't carry it).
+
+In both groups, the **Evidence section of each ticket should still cite concrete numbers** — registry fields tell you whether to fire, but the ticket reader wants to see the raw measurements (LOC, untested method names, commit hashes). The heuristics in `references/detection-heuristics.md` produce those numbers.
+
+#### Registry-driven (trigger from FOUNDATIONS.md)
+
+| Trigger | Ticket type |
+|---------|-------------|
+| `Health: hotspot` AND file is bloated (LOC > 500 OR > 20 public methods) | `foundation-bloat` |
+| `Health: hotspot` AND parameter/conditional growth dominates | `foundation-wrong-abstraction` |
+| `Last Reviewed` > 90 days AND `git log` shows touches since | `foundation-stale-review` |
+| `Consumers` count < 2 on an active row | `foundation-deprecation-candidate` |
+
+When `Health: hotspot` fires, foundationtik picks **bloat or wrong-abstraction** by looking at the file:
+- If the LOC/method-count threshold is exceeded, it's bloat.
+- Otherwise it's wrong-abstraction.
+- If both apply (large *and* growing in arity), write the bloat ticket — splitting the file unblocks the wrong-abstraction follow-up — and note the follow-up in the bloat ticket's Goals.
+
+A `Health: hotspot` row that *doesn't* clear either heuristic is unusual but possible (a small file with fast churn for non-arity reasons). In that case, default to `foundation-wrong-abstraction` and mark `Confidence: low — hotspot classification did not match standard signatures, recommend manual review`.
+
+#### Scan-driven (foundationtik computes)
 
 | Check | Signal | Ticket type |
 |-------|--------|-------------|
-| God class | LOC > 500 OR public-method count > 20 | `foundation-bloat` |
-| Untested surface | Public method with no referencing test file | `foundation-untested-api` |
-| Wrong abstraction | Parameter count or conditional count grew over last N commits on the foundation's primary file | `foundation-wrong-abstraction` |
-| Shotgun surgery | A single commit touched ≥ 5 consumers on a foundation API change | `foundation-shotgun-surgery` |
-| Coupling regression | Efferent coupling (Ce) > 5, OR instability `I = Ce/(Ca+Ce)` rising vs. last review | `foundation-coupling` |
-| Stale review | `last reviewed` older than 90 days AND `git log` shows touches in that window | `foundation-stale-review` |
-| Deprecation candidate | Active row with consumer count trending to zero (Ca < 2) | `foundation-deprecation-candidate` |
+| Untested surface | Public method/export with no referencing test file | `foundation-untested-api` |
+| Shotgun surgery | A single commit on the foundation's API touched ≥ 5 consumers | `foundation-shotgun-surgery` |
+| Coupling regression | Efferent coupling Ce > 5, or instability `I = Ce/(Ca+Ce)` rising vs. last review | `foundation-coupling` |
 
-**Confidence flagging.** Some heuristics have known blind spots (e.g. grep-based fan-in misses re-exports, Python public-method detection misses `@property` and `__call__`). When a check fires through a low-confidence path, flag it in the ticket's Evidence section as `Confidence: low — <reason>` so the reader knows to verify before acting.
+The registry doesn't carry these signals — run the heuristics from `references/detection-heuristics.md` against the foundation's `Path`. Use the row's `Consumers` count as `Ca` to save a recompute when calculating instability.
+
+#### Confidence
+
+- Row `Health: unknown` → every derived ticket inherits `Confidence: low — registry detection was low-confidence`.
+- Heuristic-with-blind-spots → flag `Confidence: low — <specific reason>` in the ticket's Evidence section. The blind spots are documented per heuristic in `references/detection-heuristics.md`.
+
+#### What foundationtik does *not* do
+
+- **Hidden foundations** (Findings section, "high fan-in but wrong directory") — dockit flags these and the human relocates. foundationtik does not write a ticket for relocation.
+- **Pretenders** (low fan-in but living in `core/`/`shared/`/`lib/`) — out-of-band findings, never registry rows. foundationtik never sees them.
 
 ### Phase 4 — Write tickets
 
@@ -95,17 +133,18 @@ Required sections, in order:
 
 ### Phase 5 — Update backlog
 
-Append one line per ticket to `specs/backlog.md`. **Position is priority order.** Put the unblockers near the top:
+Append one line per ticket to `specs/backlog.md`. **Priority order mirrors registry order.** Foundations near the top of the FOUNDATIONS.md catalog have the highest `foundation_score` — they're the most leverage to fix. Walk the catalog top-to-bottom and emit tickets per foundation in this order:
 
-1. `foundation-bloat` and `foundation-deprecation-candidate` first — they unblock other refactor work or remove it entirely.
-2. `foundation-coupling` and `foundation-wrong-abstraction` next — they shape the surface other work depends on.
-3. `foundation-untested-api`, `foundation-shotgun-surgery`, `foundation-stale-review` last — important but lower-leverage when sequenced against the others.
+1. **Hotspot tickets first** (`foundation-bloat` or `foundation-wrong-abstraction`) — dockit pre-flagged them as the refactor target.
+2. **Deprecation** (`foundation-deprecation-candidate`) — finishing a deprecation removes work.
+3. **Stale review** — fast and frees later runs from re-firing the same trigger.
+4. **Scan-driven tickets** (`foundation-untested-api`, `foundation-coupling`, `foundation-shotgun-surgery`) — important, lower-leverage when sequenced against the above.
 
 ```
-- [ ] Auth foundation bloat [foundationtik] → tickets/auth-foundation-bloat.md
-- [ ] Cache deprecation candidate [foundationtik] → tickets/cache-deprecation-candidate.md
-- [ ] Session helper coupling regression [foundationtik] → tickets/session-helper-coupling.md
+- [ ] Auth foundation hotspot (bloat) [foundationtik] → tickets/auth-foundation-bloat.md
 - [ ] Auth foundation untested API [foundationtik] → tickets/auth-foundation-untested-api.md
+- [ ] Cache deprecation candidate [foundationtik] → tickets/cache-deprecation-candidate.md
+- [ ] Helpers (hidden) coupling regression [foundationtik] → tickets/helpers-coupling.md
 ```
 
 If `specs/backlog.md` doesn't exist, create it with the entries.
@@ -114,10 +153,11 @@ If `specs/backlog.md` doesn't exist, create it with the entries.
 
 Summarise in plain language:
 
-- Foundations scanned (and any skipped, e.g. deprecated rows)
-- Tickets created (grouped by ticket type)
+- Foundations scanned (with their registry `Status` and `Health`)
+- Tickets created — group by ticket type and call out which were triggered by registry fields vs. computed signals
 - Tickets skipped because they already exist
-- Foundations that came up clean — these are good news, call them out
+- Foundations that came up clean — call them out, they're good news
+- Findings the registry surfaces but foundationtik does not act on (Hidden foundations, Pretenders) — point the user back to dockit
 
 End the report with:
 
