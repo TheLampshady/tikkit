@@ -13,7 +13,7 @@ Where the other tiks consume designs or text, foundationtik consumes **the found
 ## What This Skill Does (and Does Not)
 
 - **Plans, never executes.** Writes tickets to `specs/tickets/`. Does not modify foundation code, tests, or `FOUNDATIONS.md` itself.
-- **Reads, doesn't generate.** If `FOUNDATIONS.md` is missing, halts and points to `/repokit:dockit`. Documentation generation is dockit's job.
+- **Reads, doesn't generate.** Documentation generation is dockit's job. If `FOUNDATIONS.md` is missing, foundationtik recommends `/repokit:dockit` for the full picture and offers an ad-hoc fallback (scan-driven checks only) for users who can name foundation paths themselves — see Phase 1.
 - **Uses native signals only.** No SonarQube, no custom metric collectors. Everything is computed with `git`, `grep`, `wc`, and friends — see `references/detection-heuristics.md`.
 
 ## Cross-Plugin Contract
@@ -27,7 +27,7 @@ Where the other tiks consume designs or text, foundationtik consumes **the found
 | `specs/tickets/*.md` | shared | both plugins write |
 | `[foundationtik]` tag | tikkit | this skill writes |
 
-If a foundation row appears stale (e.g. consumer count trending differently than the registry says), foundationtik writes a ticket recommending `/repokit:dockit sync` rather than editing `FOUNDATIONS.md` directly.
+If foundationtik detects drift between the registry and the code (e.g. `Last Reviewed` > 90 days with commits in that window), it writes a `foundation-stale-review` ticket recommending `/repokit:dockit sync` rather than editing `FOUNDATIONS.md` directly.
 
 ---
 
@@ -36,11 +36,14 @@ If a foundation row appears stale (e.g. consumer count trending differently than
 ### Phase 1 — Pre-flight
 
 1. **Locate `FOUNDATIONS.md`.** Search the project root, `docs/`, and `docs/architecture/`.
-2. **If missing, halt:**
-   > FOUNDATIONS.md not found. Run `/repokit:dockit` to generate it, then re-run this skill. (dockit produces the registry only on medium/large projects — small projects don't need foundationtik.)
+2. **If missing**, give the user two options:
 
-   Don't scan the codebase blind. Without the registry, foundationtik has no opinion on what counts as foundational.
-3. **Parse the registry.** `FOUNDATIONS.md` is a dockit-generated catalog with three sections:
+   > FOUNDATIONS.md not found. Two options:
+   > 1. **Recommended:** run `/repokit:dockit` to generate the registry, then re-run me. You'll get all seven check types, priority ranking by `foundation_score`, and the Findings section.
+   > 2. **Ad-hoc mode:** name the files/dirs you want treated as foundations and I'll run only the **scan-driven** checks against them (untested-api, shotgun-surgery, coupling). The registry-driven four (bloat, wrong-abstraction, stale-review, deprecation) need fields dockit produces and will be skipped.
+
+   If the user picks option 2, ask once: *"Which paths? (e.g. `src/auth/`, `packages/core/src/index.ts`, comma-separated)"*. Validate each path exists; if not, list the project's top-level dirs and ask again. Then **skip step 3** below — there's no registry to parse — and proceed to step 4. In Phase 3, treat each user-named path as a synthetic row with `Status: active`, `Health: unknown`, no `Last Reviewed`, no `Consumers`. Don't fabricate the missing fields.
+3. **Parse the registry.** *(Skip in ad-hoc mode.)* `FOUNDATIONS.md` is a dockit-generated catalog with three sections:
    - **Catalog table** — one row per foundation: `Name | Type | Path | Owner | Status | Health | Consumers | Last Reviewed`. **Row order is the ranking.** dockit sorts by `foundation_score` (fan-in × cross-feature × stability), so the top of the table is the most-foundational code. foundationtik preserves that order when writing tickets to the backlog.
    - **Per-foundation deep-dive sections** — one per row, with: Purpose, Public API, Invariants, Consumers table, Dependencies, Test coverage, Refactor triggers, Change checklist.
    - **Findings section** — separate from the catalog. Lists Hotspots, Hidden foundations, Pretenders. Hidden foundations and pretenders are **not foundationtik's responsibility** — dockit and the human reviewer handle them. Hotspots are also marked on the catalog row with `health: hotspot`, so foundationtik picks them up there.
@@ -72,6 +75,8 @@ Default behaviour:
 For each in-scope row, the seven checks split into two groups: **registry-driven** (the trigger is already a field in `FOUNDATIONS.md` — no re-scan needed to *fire* the check) and **scan-driven** (foundationtik computes the signal because the registry doesn't carry it).
 
 In both groups, the **Evidence section of each ticket should still cite concrete numbers** — registry fields tell you whether to fire, but the ticket reader wants to see the raw measurements (LOC, untested method names, commit hashes). The heuristics in `references/detection-heuristics.md` produce those numbers.
+
+**In ad-hoc mode** (no FOUNDATIONS.md), only scan-driven checks run. Every ticket carries `Confidence: low — ad-hoc mode without registry` so the reader knows the inputs weren't validated against a registry.
 
 #### Registry-driven (trigger from FOUNDATIONS.md)
 
@@ -163,11 +168,15 @@ End the report with:
 
 > Run `/repokit:repokit status` to see all open backlog items, or `/foundationtik` again after addressing some to refresh.
 
+If foundationtik ran in ad-hoc mode, also append:
+
+> For the full check set (bloat, wrong-abstraction, stale-review, deprecation), run `/repokit:dockit` to generate FOUNDATIONS.md and then re-run me — those four need registry fields dockit produces.
+
 ---
 
 ## Conventions
 
-- **Default to "decide, don't ask."** Once the scope question is answered, run all seven checks against every in-scope foundation. Don't ask the user which checks to run — the registry plus the heuristics decide.
+- **Default to "decide, don't ask."** Once the scope question is answered, run every applicable check against every in-scope foundation — all seven with a registry, the three scan-driven ones in ad-hoc mode. Don't ask the user which checks to run; the registry plus the heuristics decide.
 - **Prefer evidence to opinion.** Tickets must cite real numbers and real `file:line` references. If a check fires but can't produce concrete evidence, drop the ticket rather than ship a vague one.
 - **Reference essays and posts, not paraphrases.** When recommending an approach (Sandi Metz on wrong abstractions, Robert Martin on coupling/instability), link to the source. The reader should be able to follow up.
 - **Stay non-destructive.** No edits to foundation code, tests, or the registry itself.
