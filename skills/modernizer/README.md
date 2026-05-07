@@ -1,56 +1,81 @@
 # modernizer
 
-Analyze codebases for AI-readiness and generate actionable plans. This skill is the **planning brain** - it knows best practices across languages, discovers available executors, and creates structured task files that agents and skills can consume.
+Analyze codebases for AI-readiness and generate actionable plans. This skill is the **planning brain** — it knows best practices across languages, discovers available executors, and creates structured ticket files that agents and skills can consume.
+
+modernizer is one of four skills in the [tikkit](../../README.md) toolkit. All four skills (`tik`, `figtik`, `stitchtik`, `modernizer`) write to the same `specs/backlog.md` so codebase audit findings live alongside text-, Figma-, and Stitch-sourced tickets.
 
 ## Philosophy
 
-- **modernizer plans, others execute** - Focuses on analysis and recommendations
-- **Language agnostic** - Supports Python, JS/TS, Java, Go, Rust, and more
-- **Plans are machine-readable** - Output structured tasks for agents
-- **Technology expert** - Knows latest best practices per language (2025)
-- **Discovery-driven** - Finds available agents/skills and recommends which to use
+- **modernizer plans, others execute** — Focuses on analysis and recommendations
+- **Language agnostic** — Supports Python, JS/TS, Java, Go, Rust, and more
+- **Plans are machine-readable** — Output structured tickets for agents
+- **Technology expert** — Knows latest best practices per language (2025)
+- **Discovery-driven** — Finds available agents/skills and recommends which to use
 
 ## Installation
 
-Copy the entire `modernizer/` folder to your project's `.claude/skills/` directory:
+modernizer ships as part of the **tikkit** plugin/extension — there's no need to copy this folder into your project manually.
+
+### Claude Code
 
 ```bash
-cp -r modernizer/ /path/to/your/project/.claude/skills/
+/plugin marketplace add TheLampshady/tikkit
+/plugin install tikkit@tikkit-marketplace
 ```
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/TheLampshady/tikkit
+```
+
+To enable the `auditor` subagent (used internally by modernizer for freshness audits), set `experimental.enableAgents: true` in `.gemini/settings.json` and copy `agents/*.md` into `.gemini/agents/`.
 
 ## Usage
 
 ```
-/modernizer          # Analyze codebase, generate plans
-/modernizer status   # Check status, clean up completed tasks
+/modernizer          # Analyze codebase, generate tickets in specs/
+/modernizer status   # Check status, clean up completed tickets
 ```
 
 ### Analyze Mode (default)
 Analyzes the codebase and generates:
 - **Conversation**: Detailed recommendations tailored to your preferences
-- **CHECKLIST.md**: Scorecard for tracking progress
-- **tasks/*.md**: Individual task files for agents/speckit
+- **`specs/CHECKLIST.md`**: Scorecard for tracking progress
+- **`specs/backlog.md`**: Append one line per ticket, tagged `[modernizer]`
+- **`specs/tickets/<slug>.md`**: Individual ticket files for agents/speckit
 
 ### Status Mode
-Shows task progress and cleans up:
-- Reports completed vs remaining tasks
-- **Deletes completed task files** from `specs/tickets/`
-- Updates CHECKLIST.md
-- Shows next priority task
+Shows ticket progress and cleans up:
+- Reports completed vs remaining tickets
+- **Deletes completed ticket files** from `specs/tickets/`
+- Updates `specs/CHECKLIST.md`
+- Shows next priority ticket
 
 ## Output Structure
 
 ```
-docs/
-└── aiprep/
-    ├── CHECKLIST.md           # Scorecard with scores and task overview
-    └── tasks/                 # Individual task files for agents
-        ├── testing-setup.md
-        ├── package-modernization.md
-        └── ...
+specs/
+├── backlog.md                       # Master checklist — shared with tik/figtik/stitchtik
+├── CHECKLIST.md                     # modernizer's scorecard + ticket overview
+└── tickets/                         # Individual ticket files
+    ├── testing-setup.md
+    ├── package-modernization.md
+    └── ...
 ```
 
-Detailed recommendations are given directly in conversation. Language references are in `references/languages/*.md`.
+Backlog entries land alongside any tickets created by sibling tikkit skills:
+
+```
+- [ ] Testing setup            [modernizer] → tickets/testing-setup.md
+- [ ] Package modernization    [modernizer] → tickets/package-modernization.md
+- [ ] Hero section redesign    [figtik]     → tickets/hero-section-redesign/ticket.md
+- [ ] Design system tokens     [stitchtik]  → tickets/design-system-tokens/ticket.md
+```
+
+Slugs are plain kebab-case — no numeric prefixes. Position in `backlog.md` IS the priority/dependency order.
+
+Detailed recommendations are given directly in conversation. Language references live in `references/languages/*.md`.
 
 ## Supported Languages
 
@@ -81,34 +106,45 @@ Each language has detailed recommendations in `references/languages/*.md` with:
 | **Code Patterns** | Hints, style, organization | Idiomatic per language |
 | **CLI Frameworks** | CLI library choice (if applicable) | Typer, oclif, Cobra, clap, picocli |
 
-## Task File Format
+## Ticket File Format
 
-Each task is structured for both human review and agent consumption:
+Each ticket follows the canonical tikkit ticket template (`./references/templates/ticket-template.md`) and is structured for both human review and agent consumption.
+
+modernizer extends the base template with execution metadata under **Goals**:
 
 ```markdown
-# Task: 001 - Testing Setup
+# <Title>
 
-## Metadata
-- **Priority**: P1
-- **Category**: testing
-- **Executor**: test-scaffolder (agent)
-- **Status**: pending
+## Overview
+What's out of date and what improves when this is done.
 
-## Current State
-[What exists now]
+## Goals
 
-## Desired State
-[What should exist]
+* Specific goal bullets...
+
+* **Current State** — What currently exists (files, configs, behavior)
+* **Desired State** — What should exist when complete
+* **Execution**
+  - **Priority**: P1 | P2 | P3
+  - **Category**: testing | packaging | linting | documentation | structure
+  - **Language**: Python | JavaScript | TypeScript | Java | Go | Rust | Multi
+  - **Executor**: [AGENT_NAME] | [SKILL_NAME] | manual
+  - **Depends On**: [TICKET_SLUGS] or none
+  - **Status**: pending | in_progress | completed
+* **Implementation Notes** — Files to modify, recommended approach
+* **Verification** — Commands + expected output
+* **Rollback** — How to revert
 
 ## Acceptance Criteria
-- [ ] pytest configured
-- [ ] Network isolation enabled
-- [ ] Tests pass
 
-## Verification
-```bash
-uv run pytest -v
-```
+- **Given** ... **When** ... **Then** ...
+- All existing tests pass
+- No regressions introduced
+
+## Tech Details
+- Feature: <NAME>
+- Type: chore | enhancement | bugfix
+- Labels: ai-readiness, tooling, testing, ...
 ```
 
 ## Workflow
@@ -130,11 +166,13 @@ uv run pytest -v
     │   └── JS/TS: Frontend or Backend?
     │
     ├── 2. Analysis (using language references)
-    │   └── Score: docs, packages, tests, quality, patterns
+    │   ├── Score: docs, packages, tests, quality, patterns
+    │   └── (optional) Delegate freshness check to auditor agent ──► context7 MCP
     │
     ├── 3. Plan Generation
     │   ├── specs/CHECKLIST.md
-    │   └── specs/tickets/*.md
+    │   ├── specs/backlog.md   (append [modernizer] entries)
+    │   └── specs/tickets/<slug>.md
     │
     └── 4. Discussion
         ├── Present summary
@@ -147,9 +185,10 @@ uv run pytest -v
 ```
 /modernizer status
     │
-    ├── Read task files in specs/tickets/
-    ├── Delete completed tasks (status: completed)
-    ├── Update CHECKLIST.md
+    ├── Read ticket files in specs/tickets/
+    ├── Cross-reference with code state (acceptance criteria met?)
+    ├── Delete completed tickets (status: completed)
+    ├── Update specs/CHECKLIST.md
     └── Report: completed, remaining, next priority
 ```
 
@@ -159,28 +198,28 @@ modernizer discovers available agents and skills:
 
 ```
 Available Executors:
-- Agent: test-scaffolder → Testing setup tasks
-- Agent: sanity-checker → Code quality verification
-- Skill: dockit → Documentation generation
-- Skill: speckit → Task/ticket management
+- Agent: auditor          → Doc/dependency freshness audits (built in)
+- Agent: test-scaffolder  → Testing setup tickets
+- Agent: feedback-loop    → Code quality verification
+- Skill: dockit           → Documentation generation
+- Skill: speckit          → Spec/ticket workflow
 ```
 
-Then matches tasks to executors and offers to run them:
+Then matches tickets to executors and offers to run them:
 
 ```
-Testing task detected:
+Testing ticket detected:
   → test-scaffolder agent available
-    "Run test-scaffolder for task 001?"
+    "Run test-scaffolder for testing-setup.md?"
 ```
 
 ## speckit Integration
 
-Task files are structured for speckit compatibility:
+Ticket files are structured for speckit compatibility — the `Goals` sub-sections, Acceptance Criteria, and Tech Details map cleanly onto a speckit ticket. If `.specify/` exists, modernizer offers to convert tickets into speckit tickets at the end of analysis.
 
-```bash
-# Convert tasks to speckit tickets
-/speckit.taskstoissues specs/tickets/
-```
+## Bundled MCP
+
+The `auditor` agent uses the **context7** MCP server (declared in `tikkit/.mcp.json`) to verify libraries and frameworks against their *current* upstream docs — not the model's training cutoff. This catches things like deprecated CLI flags, removed APIs, and modern replacements (e.g., `setup.py` → `pyproject.toml + uv`).
 
 ## Technology Recommendations (2025)
 
@@ -212,13 +251,13 @@ See `references/languages/*.md` for detailed options with licensing and establis
 
 ## What This Skill Does NOT Do
 
-- **Does not execute changes** - Only plans
-- **Does not write code** - Delegates to agents
-- **Does not assume tools exist** - Discovers what's available
-- **Does not hardcode executors** - Matches tasks dynamically
+- **Does not execute changes** — Only plans
+- **Does not write code** — Delegates to agents
+- **Does not assume tools exist** — Discovers what's available
+- **Does not hardcode executors** — Matches tickets dynamically
 
 ## Support
 
-**Author**: Zach Goldstein - Solutions Architect
+**Author**: Zach Goldstein — Solutions Architect
 
-**Issues**: [Report a bug](https://github.com/TheLampshady/repokit/issues/new?template=ai-skills.yml)
+**Issues**: [Report a bug](https://github.com/TheLampshady/tikkit/issues/new)

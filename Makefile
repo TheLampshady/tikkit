@@ -61,11 +61,14 @@ un-claude: ## Uninstall the local Claude plugin
 # Note: stitchtik is NOT a sync target — its template has Stitch-specific
 # customizations (Component Inventory, Design References, Responsive Requirements)
 # baked into the base structure. Update it manually when the canonical template changes.
+# foundationtik IS a sync target — its ticket shapes extend the canonical template
+# rather than replacing it; per-shape templates live in skills/foundationtik/references/ticket-types.md.
 
 TICKET_TEMPLATE := src/ticket-template.md
 TICKET_TARGETS := \
 	skills/tik/references/ticket-template.md \
 	skills/figtik/references/ticket-template.md \
+	skills/foundationtik/references/ticket-template.md \
 	skills/modernizer/references/templates/ticket-template.md
 
 .PHONY: sync
