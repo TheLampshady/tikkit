@@ -11,7 +11,7 @@ Tikkit is a ticket creation toolkit for AI agents. It turns various inputs into 
 - Code-quality audits → `modernizer` (with the `auditor` agent)
 - `FOUNDATIONS.md` registry entries → `foundationtik` (consumes a repokit-generated artefact)
 
-All skills write to a shared `specs/` directory in the consuming project. Tikkit is a sibling of [repokit](https://github.com/TheLampshady/repokit), which handles documentation, onboarding, and code-quality checking.
+All skills write to a shared `.backlog/` directory in the consuming project. Tikkit is a sibling of [repokit](https://github.com/TheLampshady/repokit), which handles documentation, onboarding, and code-quality checking.
 
 There is no build system or compiled code. Everything is Markdown, TOML, and JSON.
 
@@ -19,13 +19,12 @@ There is no build system or compiled code. Everything is Markdown, TOML, and JSO
 
 | Path | Purpose |
 |------|---------|
-| `skills/tik/` | Default ticket skill — turns text requests into tickets in `specs/tickets/` |
+| `skills/tik/` | Default ticket skill — turns text requests into tickets in `.backlog/tickets/` |
 | `skills/figtik/` | Figma-to-ticket skill — fetches design data via API, creates implementation tickets |
 | `skills/stitchtik/` | Stitch-to-ticket skill — analyzes Google Stitch UI exports against the codebase |
 | `skills/foundationtik/` | Foundation-health-to-ticket skill — reads repokit's `FOUNDATIONS.md`, scans the code, writes maintenance tickets for shared/foundational code |
-| `skills/modernizer/` | Code-modernization skill — audits tooling, writes tickets to `specs/` |
+| `skills/modernizer/` | Code-modernization skill — audits tooling, writes tickets to `.backlog/` |
 | `agents/auditor.agent.md` | Code/practice auditor — invoked by modernizer to find stale patterns |
-| `.agents/skills/` | Symlink to `skills/` for Gemini cross-compatibility |
 | `.claude-plugin/` | Claude plugin metadata (`plugin.json`) and marketplace catalog (`marketplace.json`) |
 | `.mcp.json` | Bundled MCP servers (context7 for library documentation lookups) |
 | `policies/` | Gemini CLI policy engine rules |
@@ -50,10 +49,10 @@ All five skills take different inputs but write to the same shared backlog. Posi
   ┌──────────────────┐         ┌──────────────┐      │
   │ Figma URL        │  ─────► │   /figtik    │ ─────┤
   └──────────────────┘         └──────────────┘      │
-                                                       │     ┌────────────────────┐
-  ┌──────────────────┐         ┌──────────────┐      │     │ specs/backlog.md   │
-  │ Stitch dir       │  ─────► │  /stitchtik  │ ─────┼───► │ specs/tickets/     │
-  └──────────────────┘         └──────────────┘      │     └────────────────────┘
+                                                       │     ┌───────────────────────┐
+  ┌──────────────────┐         ┌──────────────┐      │     │ .backlog/backlog.md   │
+  │ Stitch dir       │  ─────► │  /stitchtik  │ ─────┼───► │ .backlog/tickets/     │
+  └──────────────────┘         └──────────────┘      │     └───────────────────────┘
                                                        │
   ┌──────────────────┐         ┌──────────────┐      │
   │ FOUNDATIONS.md + │  ─────► │/foundationtik│ ─────┤
@@ -75,11 +74,11 @@ All five skills take different inputs but write to the same shared backlog. Posi
 
 ### Skills (`skills/`, cross-platform)
 
-Skills have YAML frontmatter (`name`, `description`, `user-invocable: true`) and load on demand. Claude discovers from `skills/` at plugin root; Gemini discovers from `.agents/skills/` (symlinked to `skills/`); Copilot discovers from `skills/` via plugin install.
+Skills have YAML frontmatter (`name`, `description`, `user-invocable: true`) and load on demand. All three loaders read from `skills/` at the plugin/extension root: Claude via plugin install, Gemini via extension install (which copies to `~/.gemini/extensions/<name>/skills/`), and Copilot via plugin install.
 
 | Skill | Modes | Key Behavior |
 |-------|-------|-------------|
-| `tik` | (single mode) | Default ticket skill — turns text requests into tickets in `specs/tickets/` with `[tik]` tag |
+| `tik` | (single mode) | Default ticket skill — turns text requests into tickets in `.backlog/tickets/` with `[tik]` tag |
 | `figtik` | create, update | Fetches Figma design data via API; compares against codebase; writes tickets with `[figtik]` tag |
 | `stitchtik` | (single mode) | Analyzes Google Stitch UI exports (`screen.png`, `code.html`, `DESIGN.md`) against codebase; writes tickets with `[stitchtik]` tag |
 | `foundationtik` | (single mode) | Reads `FOUNDATIONS.md` (from repokit's dockit); runs seven shell-only health checks per foundation (bloat, untested API, wrong abstraction, shotgun surgery, coupling, stale review, deprecation); writes tickets with `[foundationtik]` tag. Halts if `FOUNDATIONS.md` is missing |
@@ -99,11 +98,11 @@ Skills have YAML frontmatter (`name`, `description`, `user-invocable: true`) and
 
 The MCP server is declared at the plugin root in `.mcp.json` and gets registered automatically when the plugin is installed. No per-project config is required in the consuming repo.
 
-### Ticket System (`specs/`)
+### Ticket System (`.backlog/`)
 
 All tikkit skills write to a shared location in the consuming project:
-- `specs/backlog.md` — master checklist, one line per item, tagged by source
-- `specs/tickets/<slug>.md` or `specs/tickets/<slug>/ticket.md` — individual tickets with full context
+- `.backlog/backlog.md` — master checklist, one line per item, tagged by source
+- `.backlog/tickets/<slug>.md` or `.backlog/tickets/<slug>/ticket.md` — individual tickets with full context
 
 Format in `backlog.md` — position in the list IS the priority/dependency order:
 ```
@@ -116,11 +115,11 @@ Format in `backlog.md` — position in the list IS the priority/dependency order
 
 All skills use plain kebab-case slugs — no numeric prefixes. Dependencies are expressed via position in the backlog and references inside each ticket.
 
-Always check `specs/backlog.md` before creating a ticket to avoid duplicates.
+Always check `.backlog/backlog.md` before creating a ticket to avoid duplicates.
 
 ### Cross-plugin contract with repokit
 
-If the consuming project also has [repokit](https://github.com/TheLampshady/repokit) installed, both plugins share the same `specs/backlog.md`. Tag ownership:
+If the consuming project also has [repokit](https://github.com/TheLampshady/repokit) installed, both plugins share the same `.backlog/backlog.md`. Tag ownership:
 
 | Tag | Owner |
 |-----|-------|
@@ -134,8 +133,8 @@ The format is identical — neither plugin imports the other.
 | Artefact | Owner plugin | Consumer |
 |----------|--------------|----------|
 | `FOUNDATIONS.md` | repokit (dockit generates, sync refreshes) | foundationtik reads (does NOT modify) |
-| `specs/backlog.md` | shared | both plugins write |
-| `specs/tickets/*.md` | shared | both plugins write |
+| `.backlog/backlog.md` | shared | both plugins write |
+| `.backlog/tickets/*.md` | shared | both plugins write |
 
 If `foundationtik` detects drift between the registry and the actual code, it writes a `foundation-stale-review` ticket recommending `/repokit:dockit sync` rather than editing `FOUNDATIONS.md` directly.
 
@@ -162,7 +161,7 @@ The root IS the plugin — there is no nested `plugins/` directory.
 
 | Category | Rules |
 |----------|-------|
-| Destructive ops | Confirm `rm -rf`, confirm deleting `specs/` or `agents/` dirs |
+| Destructive ops | Confirm `rm -rf`, confirm deleting `.backlog/` or `agents/` dirs |
 | Git | Confirm `git push` |
 | Secrets | Deny reading `.env`/`id_rsa`/`passwd`, deny writing to `.env*` |
 | Context files | Confirm before overwriting `CLAUDE.md` or `GEMINI.md` |

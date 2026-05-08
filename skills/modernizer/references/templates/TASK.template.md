@@ -89,7 +89,7 @@ labels: [ai-readiness, tooling, testing, etc.]
 ```
 
 **Open Questions (for spec process):**
-- [Any unresolved technical decisions — flag for speckit if applicable]
+- [Any unresolved technical decisions — flag for the spec process]
 
 ## References
 

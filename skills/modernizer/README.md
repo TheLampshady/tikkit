@@ -2,7 +2,7 @@
 
 Analyze codebases for AI-readiness and generate actionable plans. This skill is the **planning brain** — it knows best practices across languages, discovers available executors, and creates structured ticket files that agents and skills can consume.
 
-modernizer is one of four skills in the [tikkit](../../README.md) toolkit. All four skills (`tik`, `figtik`, `stitchtik`, `modernizer`) write to the same `specs/backlog.md` so codebase audit findings live alongside text-, Figma-, and Stitch-sourced tickets.
+modernizer is one of four skills in the [tikkit](../../README.md) toolkit. All four skills (`tik`, `figtik`, `stitchtik`, `modernizer`) write to the same `.backlog/backlog.md` so codebase audit findings live alongside text-, Figma-, and Stitch-sourced tickets.
 
 ## Philosophy
 
@@ -34,28 +34,28 @@ To enable the `auditor` subagent (used internally by modernizer for freshness au
 ## Usage
 
 ```
-/modernizer          # Analyze codebase, generate tickets in specs/
+/modernizer          # Analyze codebase, generate tickets in .backlog/
 /modernizer status   # Check status, clean up completed tickets
 ```
 
 ### Analyze Mode (default)
 Analyzes the codebase and generates:
 - **Conversation**: Detailed recommendations tailored to your preferences
-- **`specs/CHECKLIST.md`**: Scorecard for tracking progress
-- **`specs/backlog.md`**: Append one line per ticket, tagged `[modernizer]`
-- **`specs/tickets/<slug>.md`**: Individual ticket files for agents/speckit
+- **`.backlog/CHECKLIST.md`**: Scorecard for tracking progress
+- **`.backlog/backlog.md`**: Append one line per ticket, tagged `[modernizer]`
+- **`.backlog/tickets/<slug>.md`**: Individual ticket files for agents and downstream SDD frameworks (e.g., speckit)
 
 ### Status Mode
 Shows ticket progress and cleans up:
 - Reports completed vs remaining tickets
-- **Deletes completed ticket files** from `specs/tickets/`
-- Updates `specs/CHECKLIST.md`
+- **Deletes completed ticket files** from `.backlog/tickets/`
+- Updates `.backlog/CHECKLIST.md`
 - Shows next priority ticket
 
 ## Output Structure
 
 ```
-specs/
+.backlog/
 ├── backlog.md                       # Master checklist — shared with tik/figtik/stitchtik
 ├── CHECKLIST.md                     # modernizer's scorecard + ticket overview
 └── tickets/                         # Individual ticket files
@@ -170,9 +170,9 @@ What's out of date and what improves when this is done.
     │   └── (optional) Delegate freshness check to auditor agent ──► context7 MCP
     │
     ├── 3. Plan Generation
-    │   ├── specs/CHECKLIST.md
-    │   ├── specs/backlog.md   (append [modernizer] entries)
-    │   └── specs/tickets/<slug>.md
+    │   ├── .backlog/CHECKLIST.md
+    │   ├── .backlog/backlog.md   (append [modernizer] entries)
+    │   └── .backlog/tickets/<slug>.md
     │
     └── 4. Discussion
         ├── Present summary
@@ -185,10 +185,10 @@ What's out of date and what improves when this is done.
 ```
 /modernizer status
     │
-    ├── Read ticket files in specs/tickets/
+    ├── Read ticket files in .backlog/tickets/
     ├── Cross-reference with code state (acceptance criteria met?)
     ├── Delete completed tickets (status: completed)
-    ├── Update specs/CHECKLIST.md
+    ├── Update .backlog/CHECKLIST.md
     └── Report: completed, remaining, next priority
 ```
 
@@ -202,7 +202,7 @@ Available Executors:
 - Agent: test-scaffolder  → Testing setup tickets
 - Agent: feedback-loop    → Code quality verification
 - Skill: dockit           → Documentation generation
-- Skill: speckit          → Spec/ticket workflow
+- Skill: speckit          → SDD framework (spec/ticket workflow)
 ```
 
 Then matches tickets to executors and offers to run them:
@@ -213,9 +213,9 @@ Testing ticket detected:
     "Run test-scaffolder for testing-setup.md?"
 ```
 
-## speckit Integration
+## SDD Framework Integration
 
-Ticket files are structured for speckit compatibility — the `Goals` sub-sections, Acceptance Criteria, and Tech Details map cleanly onto a speckit ticket. If `.specify/` exists, modernizer offers to convert tickets into speckit tickets at the end of analysis.
+Ticket files are structured for SDD framework compatibility (speckit by default) — the `Goals` sub-sections, Acceptance Criteria, and Tech Details map cleanly onto a framework ticket. If `.specify/` exists, modernizer offers to convert tickets into framework tickets at the end of analysis.
 
 ## Bundled MCP
 

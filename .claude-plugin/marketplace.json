@@ -8,7 +8,7 @@
     {
       "name": "tikkit",
       "source": "./",
-      "description": "AI-powered ticket creation toolkit. Turns text requests, Figma designs, Stitch UI exports, and code-quality audits into structured implementation tickets in specs/tickets/."
+      "description": "AI-powered ticket creation toolkit. Turns text requests, Figma designs, Stitch UI exports, and code-quality audits into structured implementation tickets in .backlog/tickets/."
     }
   ]
 }

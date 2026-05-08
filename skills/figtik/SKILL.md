@@ -6,7 +6,7 @@ user-invocable: true
 
 # figtik
 
-This skill fetches Figma design data via the API, analyzes it against the existing codebase, walks you through a focused interview, and produces structured implementation tickets in `specs/tickets/`. Tickets are designed to be readable by humans (dev, design, QA) and consumable by speckit for spec generation.
+This skill fetches Figma design data via the API, analyzes it against the existing codebase, walks you through a focused interview, and produces structured implementation tickets in `.backlog/tickets/`. Tickets are designed to be readable by humans (dev, design, QA) and consumable by an SDD framework (e.g., speckit) for spec generation.
 
 ## Modes
 
@@ -18,7 +18,7 @@ This skill operates in two modes:
 ### Mode Detection
 
 - **Create**: user provides a Figma link without referencing an existing ticket
-- **Update**: user references an existing ticket by name OR says "update" / "add to" alongside a ticket reference. Target recent tickets in `specs/tickets/` — if ambiguous, list recent tickets and ask which one.
+- **Update**: user references an existing ticket by name OR says "update" / "add to" alongside a ticket reference. Target recent tickets in `.backlog/tickets/` — if ambiguous, list recent tickets and ask which one.
 
 When updating, if a Figma link is provided, fetch and merge the new data. If no Figma link, just update the ticket content based on the user's description.
 
@@ -50,14 +50,14 @@ Run the fetch script from the skill's bundled scripts directory.
 **Create mode:** Generate a kebab-case ticket name from the Figma node name and work type (e.g., `form-screen-redesign`, `hero-section-animation`). Create the folder and fetch into it:
 
 ```bash
-mkdir -p specs/tickets/<ticket-name>
-bash <skill-path>/scripts/figma_fetch.sh <file_key> <node_id> specs/tickets/<ticket-name>
+mkdir -p .backlog/tickets/<ticket-name>
+bash <skill-path>/scripts/figma_fetch.sh <file_key> <node_id> .backlog/tickets/<ticket-name>
 ```
 
 **Update mode (with Figma link):** Fetch into the existing ticket folder. New data sits alongside the original since node IDs differ:
 
 ```bash
-bash <skill-path>/scripts/figma_fetch.sh <file_key> <node_id> specs/tickets/<existing-ticket>
+bash <skill-path>/scripts/figma_fetch.sh <file_key> <node_id> .backlog/tickets/<existing-ticket>
 ```
 
 The script requires the `FIGMA_API_KEY` environment variable. If missing, tell the user:
@@ -67,7 +67,7 @@ The script requires the `FIGMA_API_KEY` environment variable. If missing, tell t
 Then parse the raw response:
 
 ```bash
-bash <skill-path>/scripts/parse_figma.sh specs/tickets/<ticket-name>/figma_raw.json specs/tickets/<ticket-name>
+bash <skill-path>/scripts/parse_figma.sh .backlog/tickets/<ticket-name>/figma_raw.json .backlog/tickets/<ticket-name>
 ```
 
 This produces `figma.json` and `summary.txt`. The script also downloads rendered PNGs (@2x) and SVG exports into `images/`.
@@ -87,15 +87,15 @@ Check these locations for an existing design system:
 3. **Token files** — `tokens.json`, `tokens/`, `design-tokens/`, `theme/` directories
 4. **Component library** — `components/`, `ui/`, `shared/` directories for existing component patterns
 5. **Documentation** — `docs/`, `README.md`, any design system docs
-6. **Existing design constitution** — check `specs/design-system.md` (this skill may have created one previously)
+6. **Existing design constitution** — check `.backlog/design-system.md` (this skill may have created one previously)
 
 #### Design System Constitution
 
-If the project has no `specs/design-system.md`, create one modeled after the speckit constitution format. If one already exists, update it with any new tokens or patterns discovered from this Figma design.
+If the project has no `.backlog/design-system.md`, create one modeled after an SDD framework's constitution format (e.g., speckit's project constitution). If one already exists, update it with any new tokens or patterns discovered from this Figma design.
 
 See **Appendix: Design System Constitution Template** at the bottom of this file for the full template.
 
-The constitution serves two purposes: it helps this skill map Figma values to existing code on future runs, and it gives speckit a reference for what design patterns to leverage during implementation.
+The constitution serves two purposes: it helps this skill map Figma values to existing code on future runs, and it gives the downstream SDD framework a reference for what design patterns to leverage during implementation.
 
 ## Step 3: Codebase Comparison
 
@@ -113,7 +113,7 @@ Analyze the Figma design against the existing codebase. Start with a surface-lev
    | Pricing card | No change | `components/PricingCard.tsx` | — |
    | Feature grid | New — build | — | 3-column auto-layout, no existing match |
 
-   Present this table to the user. It makes scope immediately clear and tells speckit what to reuse.
+   Present this table to the user. It makes scope immediately clear and tells the spec process what to reuse.
 
 2. **Scope summary** — present what you think is changing:
    > "Here's what I see:
@@ -200,7 +200,7 @@ Keep it conversational — 2-3 questions at a time max.
 
 ### Create Mode
 
-Create the ticket in `specs/tickets/<ticket-name>/`.
+Create the ticket in `.backlog/tickets/<ticket-name>/`.
 
 ### Update Mode
 
@@ -237,9 +237,9 @@ In addition to the standard goal bullets, include these sub-sections under Goals
 
 In addition to any standard references, always include:
 - **Figma (layout)**: the Figma URL with file key and node ID
-- **Design system**: `specs/design-system.md` (if it exists)
-- **Assets**: `specs/tickets/<ticket-name>/images/`
-- **Figma data**: `specs/tickets/<ticket-name>/figma.json`
+- **Design system**: `.backlog/design-system.md` (if it exists)
+- **Assets**: `.backlog/tickets/<ticket-name>/images/`
+- **Figma data**: `.backlog/tickets/<ticket-name>/figma.json`
 
 #### Acceptance Criteria — Figma-specific coverage
 
@@ -276,7 +276,7 @@ If the user provides extra screenshots or reference files, save them in the tick
 
 ### Backlog
 
-If `specs/backlog.md` exists, append: `- [ ] <Title> [figtik] → tickets/<ticket-name>/ticket.md`
+If `.backlog/backlog.md` exists, append: `- [ ] <Title> [figtik] → tickets/<ticket-name>/ticket.md`
 
 If it doesn't exist, create it with the entry.
 
@@ -286,15 +286,15 @@ If it doesn't exist, create it with the entry.
 - Extract real values from Figma — never approximate colors or font sizes
 - Goals should be specific enough to act on without re-reading designs
 - Always reference the Figma URL in the ticket
-- Component inventory must clearly distinguish "leverage existing" from "build new" so speckit prioritizes reuse
+- Component inventory must clearly distinguish "leverage existing" from "build new" so the spec process prioritizes reuse
 - When in Update mode, preserve all existing content — add or modify, never remove
-- Keep the design system constitution (`specs/design-system.md`) up to date across tickets
+- Keep the design system constitution (`.backlog/design-system.md`) up to date across tickets
 
 ---
 
 ## Appendix: Design System Constitution Template
 
-Create this at `specs/design-system.md` when a project's design system is first discovered. Model after the speckit project constitution — versioned, principled, and kept in sync.
+Create this at `.backlog/design-system.md` when a project's design system is first discovered. Model after an SDD framework's project constitution (e.g., speckit's) — versioned, principled, and kept in sync.
 
 ```markdown
 # Design System Constitution

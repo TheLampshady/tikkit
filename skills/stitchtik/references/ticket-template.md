@@ -39,7 +39,7 @@ Only include when both variants exist.>
 - **Build new:** [Component name] — [what it is, why no existing match]
 - **No change:** [Component] — already matches mockup
 
-<This section tells speckit what to reuse vs. build. Be specific — include file paths
+<This section tells the spec process what to reuse vs. build. Be specific — include file paths
 for existing components.>
 
 ## Goals
@@ -65,12 +65,12 @@ separate section.>
 - There are open technical questions>
 
 **Open Questions (for spec process):**
-- <Unresolved technical decisions for speckit to research>
+- <Unresolved technical decisions for the spec process to research>
 - <Use `[TBD]` inline for specific unknowns>
 
 ## References
 
-- Design system: `specs/design-system.md` <or DESIGN.md notes>
+- Design system: `.backlog/design-system.md` <or DESIGN.md notes>
 - <Existing component files that need modification>
 - <Other docs, links, or resources>
 
@@ -105,7 +105,7 @@ being built and why in under 10 seconds.
 what's being built before reading the details. Include breakpoint behavior as a single line
 when both desktop and mobile variants exist. Mention code.html only when it exists.
 
-**Component Inventory** — Tells speckit what to reuse vs. build. Always include file paths
+**Component Inventory** — Tells the spec process what to reuse vs. build. Always include file paths
 for existing components. This section is separate from Goals because it's a lookup table,
 not a work breakdown.
 
@@ -113,7 +113,7 @@ not a work breakdown.
 questions. Desktop/mobile differences go inline per component — don't create a separate
 responsive section that duplicates the goals.
 
-**Tech Details** — Only when non-obvious. Flag unknowns with `[TBD]` for speckit.
+**Tech Details** — Only when non-obvious. Flag unknowns with `[TBD]` for the spec process.
 
 **References** — Code paths and docs only. No image paths — those are embedded in Design.
 

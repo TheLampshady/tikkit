@@ -22,8 +22,8 @@ Each skill takes a different input but writes to the same place. Position in the
   │ Figma URL        │  ─────► │   /figtik    │ ─────┤
   └──────────────────┘         └──────────────┘      │
                                                        │     ┌────────────────────┐
-  ┌──────────────────┐         ┌──────────────┐      │     │ specs/backlog.md   │
-  │ Stitch dir       │  ─────► │  /stitchtik  │ ─────┼───► │ specs/tickets/     │
+  ┌──────────────────┐         ┌──────────────┐      │     │ .backlog/backlog.md   │
+  │ Stitch dir       │  ─────► │  /stitchtik  │ ─────┼───► │ .backlog/tickets/     │
   └──────────────────┘         └──────────────┘      │     └────────────────────┘
                                                        │
   ┌──────────────────┐         ┌──────────────┐      │
@@ -62,7 +62,7 @@ Each skill takes a different input but writes to the same place. Position in the
 |------------|---------|
 | `context7` | Bundled HTTP MCP — fetches live documentation for libraries/frameworks so audits compare your code against the *current* upstream state, not training data. |
 
-All output lands in `specs/backlog.md` (master checklist) and `specs/tickets/` (individual tickets) in the consuming project.
+All output lands in `.backlog/backlog.md` (master checklist) and `.backlog/tickets/` (individual tickets) in the consuming project.
 
 ---
 
@@ -107,7 +107,7 @@ Backlog entries — position in the list IS the priority/dependency order:
 
 Tags ship with tikkit: `[tik]`, `[figtik]`, `[stitchtik]`, `[foundationtik]`, `[modernizer]`. Slugs are plain kebab-case — no numeric prefixes.
 
-Always check `specs/backlog.md` before creating a ticket to avoid duplicates.
+Always check `.backlog/backlog.md` before creating a ticket to avoid duplicates.
 
 If [repokit](https://github.com/TheLampshady/repokit) is also installed, it adds `[feedback-loop]` to the same file. The format is identical and neither plugin imports the other.
 
@@ -118,8 +118,8 @@ If [repokit](https://github.com/TheLampshady/repokit) is also installed, it adds
 | Artefact | Owner plugin | Consumer |
 |----------|--------------|----------|
 | `FOUNDATIONS.md` | repokit (dockit generates, sync refreshes) | foundationtik reads (does NOT modify) |
-| `specs/backlog.md` | shared | both plugins write |
-| `specs/tickets/*.md` | shared | both plugins write |
+| `.backlog/backlog.md` | shared | both plugins write |
+| `.backlog/tickets/*.md` | shared | both plugins write |
 | `[foundationtik]` tag | tikkit | this skill writes |
 
 If `foundationtik` halts because `FOUNDATIONS.md` doesn't exist, run `/repokit:dockit` first. If it detects drift between the registry and the code, it files a `foundation-stale-review` ticket asking the user to run `/repokit:dockit sync` — it never edits the registry directly.

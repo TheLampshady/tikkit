@@ -12,7 +12,7 @@ Where the other tiks consume designs or text, foundationtik consumes **the found
 
 ## What This Skill Does (and Does Not)
 
-- **Plans, never executes.** Writes tickets to `specs/tickets/`. Does not modify foundation code, tests, or `FOUNDATIONS.md` itself.
+- **Plans, never executes.** Writes tickets to `.backlog/tickets/`. Does not modify foundation code, tests, or `FOUNDATIONS.md` itself.
 - **Reads, doesn't generate.** Documentation generation is dockit's job. If `FOUNDATIONS.md` is missing, foundationtik recommends `/repokit:dockit` for the full picture and offers an ad-hoc fallback (scan-driven checks only) for users who can name foundation paths themselves — see Phase 1.
 - **Uses native signals only.** No SonarQube, no custom metric collectors. Everything is computed with `git`, `grep`, `wc`, and friends — see `references/detection-heuristics.md`.
 
@@ -23,8 +23,8 @@ Where the other tiks consume designs or text, foundationtik consumes **the found
 | Artefact | Owner plugin | Consumer |
 |----------|--------------|----------|
 | `FOUNDATIONS.md` | repokit (dockit generates, sync refreshes) | foundationtik reads |
-| `specs/backlog.md` | shared | both plugins write |
-| `specs/tickets/*.md` | shared | both plugins write |
+| `.backlog/backlog.md` | shared | both plugins write |
+| `.backlog/tickets/*.md` | shared | both plugins write |
 | `[foundationtik]` tag | tikkit | this skill writes |
 
 If foundationtik detects drift between the registry and the code (e.g. `Last Reviewed` > 90 days with commits in that window), it writes a `foundation-stale-review` ticket recommending `/repokit:dockit sync` rather than editing `FOUNDATIONS.md` directly.
@@ -56,7 +56,7 @@ If foundationtik detects drift between the registry and the code (e.g. `Last Rev
    | `Health` | `healthy` · `hotspot` · `unknown` | `hotspot` is dockit's pre-classification of a refactor target. `unknown` = low-confidence detection — propagate to derived tickets. |
    | `Type` | `service` · `abstraction` · `primitive` · `design-system` | Used for ticket framing only. |
 
-4. **Read `specs/backlog.md`.** Build a set of existing `[foundationtik]` tickets keyed by `(foundation-slug, ticket-type-suffix)` for duplicate suppression in Phase 4.
+4. **Read `.backlog/backlog.md`.** Build a set of existing `[foundationtik]` tickets keyed by `(foundation-slug, ticket-type-suffix)` for duplicate suppression in Phase 4.
 
 ### Phase 2 — Scope
 
@@ -118,7 +118,7 @@ The registry doesn't carry these signals — run the heuristics from `references
 
 For each fired check:
 
-1. **De-dupe.** Skip if a ticket with the same `(foundation, ticket_type)` pair already exists in `specs/backlog.md`. The point is to *grow* the backlog, not flood it with re-runs.
+1. **De-dupe.** Skip if a ticket with the same `(foundation, ticket_type)` pair already exists in `.backlog/backlog.md`. The point is to *grow* the backlog, not flood it with re-runs.
 2. **Slug.** Use `<foundation-slug>-<ticket-type-suffix>`:
    - `auth-foundation-bloat`
    - `cache-untested-api`
@@ -138,7 +138,7 @@ Required sections, in order:
 
 ### Phase 5 — Update backlog
 
-Append one line per ticket to `specs/backlog.md`. **Priority order mirrors registry order.** Foundations near the top of the FOUNDATIONS.md catalog have the highest `foundation_score` — they're the most leverage to fix. Walk the catalog top-to-bottom and emit tickets per foundation in this order:
+Append one line per ticket to `.backlog/backlog.md`. **Priority order mirrors registry order.** Foundations near the top of the FOUNDATIONS.md catalog have the highest `foundation_score` — they're the most leverage to fix. Walk the catalog top-to-bottom and emit tickets per foundation in this order:
 
 1. **Hotspot tickets first** (`foundation-bloat` or `foundation-wrong-abstraction`) — dockit pre-flagged them as the refactor target.
 2. **Deprecation** (`foundation-deprecation-candidate`) — finishing a deprecation removes work.
@@ -152,7 +152,7 @@ Append one line per ticket to `specs/backlog.md`. **Priority order mirrors regis
 - [ ] Helpers (hidden) coupling regression [foundationtik] → tickets/helpers-coupling.md
 ```
 
-If `specs/backlog.md` doesn't exist, create it with the entries.
+If `.backlog/backlog.md` doesn't exist, create it with the entries.
 
 ### Phase 6 — Report
 

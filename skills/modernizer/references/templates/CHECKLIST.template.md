@@ -74,20 +74,20 @@
 
 ## Next Steps
 
-1. Review task files in `specs/tickets/`
+1. Review task files in `.backlog/tickets/`
 2. Prioritize based on project needs
 3. Run recommended executors or implement manually
 4. Re-run `/modernizer` to verify improvements
 
-## speckit Integration
+## SDD Framework Integration
 
 [IF_SPECKIT_AVAILABLE]
-Tasks can be converted to speckit tickets. Run:
+An SDD framework (speckit) is detected. Tasks can be converted into speckit tickets:
 ```
-/speckit.taskstoissues specs/tickets/
+/speckit.taskstoissues .backlog/tickets/
 ```
 [ENDIF]
 
 [IF_NO_SPECKIT]
-speckit not detected. Tasks are standalone markdown files.
+No SDD framework detected. Tasks remain as standalone markdown files until handed off to one (e.g., speckit).
 [ENDIF]

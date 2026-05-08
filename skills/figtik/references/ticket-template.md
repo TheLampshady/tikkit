@@ -40,7 +40,7 @@ related items under bold sub-headings when the ticket covers multiple areas of w
 - There are open technical questions that need answers before or during implementation>
 
 **Open Questions (for spec process):**
-- <Unresolved technical decisions that speckit should research and resolve during spec
+- <Unresolved technical decisions for the spec process to research and resolve during spec
   generation — e.g., technology selection, architecture approach, performance strategy>
 - <Use `[TBD]` inline for specific unknowns — e.g., "Cache layer: [TBD — evaluate Redis
   vs Memcached for session storage]">
@@ -106,7 +106,7 @@ asking follow-up questions. Skills extend this section with domain-specific sub-
 | modernizer | Current State, Desired State, Execution (metadata, executor, verification, rollback) |
 
 **Tech Details** — Only include when there's something non-obvious. Use `[TBD]` for
-unknowns that speckit will resolve. Omit entirely if nothing to note.
+unknowns the spec process will resolve. Omit entirely if nothing to note.
 
 **References** — Real links and file paths only. Don't manufacture references that don't exist.
 

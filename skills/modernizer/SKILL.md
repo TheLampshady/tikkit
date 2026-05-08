@@ -1,6 +1,6 @@
 ---
 name: modernizer
-description: 'Analyze and modernize codebases. Audits for AI-readiness, outdated tooling, and missing quality infrastructure. Generates actionable tickets in specs/tickets/ and a progress checklist in specs/CHECKLIST.md. Use when asked to: modernize the codebase, audit code quality, check if tools are up to date, improve the dev setup, find what testing/linting/packaging improvements are needed. Modes: analyze, status.'
+description: 'Analyze and modernize codebases. Audits for AI-readiness, outdated tooling, and missing quality infrastructure. Generates actionable tickets in .backlog/tickets/ and a progress checklist in .backlog/CHECKLIST.md. Use when asked to: modernize the codebase, audit code quality, check if tools are up to date, improve the dev setup, find what testing/linting/packaging improvements are needed. Modes: analyze, status.'
 user-invocable: true
 ---
 
@@ -22,20 +22,20 @@ executors, and creates structured task plans that other agents can consume.
 
 | Mode | Command | Description |
 |------|---------|-------------|
-| `analyze` | `/modernizer` or `/modernizer analyze` | Audit codebase, generate plans in `specs/` |
+| `analyze` | `/modernizer` or `/modernizer analyze` | Audit codebase, generate plans in `.backlog/` |
 | `status` | `/modernizer status` | Show task status, clean up completed tasks |
 
 ### Status Mode
 
 When `/modernizer status` is invoked:
 
-1. **Read all task files** in `specs/tickets/`
+1. **Read all task files** in `.backlog/tickets/`
 2. **Check status** of each task (from metadata yaml block)
 3. **Cross-reference with code state** — For each pending task, check if the acceptance criteria are now met in the actual codebase:
    - "No tests exist" → check if test files now exist
    - "No linter config" → check if linter config files now exist
    - "Missing CI pipeline" → check if `.github/workflows/` now exists
-   - If speckit is available (`.specify/` exists), check for completed speckit tickets that match modernizer tasks
+   - If an SDD framework is available (e.g., speckit, detected via `.specify/`), check for completed framework tickets that match modernizer tasks
    - Mark verified-complete tasks as `status: completed`
 4. **Delete completed tasks** - Remove any task file where `status: completed`
 5. **Update CHECKLIST.md** - Refresh the task table to reflect remaining tasks
@@ -65,10 +65,10 @@ Example output:
 
 ## Output Location
 
-All outputs go to `specs/`:
+All outputs go to `.backlog/`:
 
 ```
-specs/
+.backlog/
 ├── backlog.md                 # Master checklist, one line per item, tagged [modernizer]
 └── tickets/                   # Individual task files for agents
     ├── testing-setup.md
@@ -128,7 +128,7 @@ ls agents/*.md .claude/agents/*.md 2>/dev/null
 # Find available skills (plugin skills at root, or local)
 ls skills/*/SKILL.md .claude/skills/*/SKILL.md 2>/dev/null
 
-# Check for speckit
+# Check for an SDD framework (currently only speckit is auto-detected)
 ls .specify/ 2>/dev/null
 ```
 
@@ -231,7 +231,7 @@ Do a quick doc health check — this does not require the auditor agent.
 
 If no docs were found in Phase 1, skip this step — note "no docs" as a finding and recommend `/repokit:dockit`.
 
-Write any doc-related tickets tagged `[modernizer]` in `specs/tickets/`, same as all other modernizer tickets.
+Write any doc-related tickets tagged `[modernizer]` in `.backlog/tickets/`, same as all other modernizer tickets.
 
 > For a deeper documentation audit (staleness details, automation gaps, troubleshooting coverage), suggest the user ask for a doc health review — the **auditor agent** auto-triggers for that and provides a comprehensive findings report.
 
@@ -239,22 +239,22 @@ Write any doc-related tickets tagged `[modernizer]` in `specs/tickets/`, same as
 
 ### Phase 3: Plan Generation
 
-Generate structured output in `specs/`:
+Generate structured output in `.backlog/`:
 
-#### CHECKLIST.md (`specs/CHECKLIST.md`)
+#### CHECKLIST.md (`.backlog/CHECKLIST.md`)
 
 Overall scores, task overview, and quick checklist (see template). This is the persistent artifact for tracking progress.
 
-#### Backlog (`specs/backlog.md`)
+#### Backlog (`.backlog/backlog.md`)
 
-Before creating any ticket, check `specs/backlog.md` for duplicates. For each new ticket, append a line. **Position in the backlog IS the priority order** — add tickets in priority order (P1 first, then P2, etc.):
+Before creating any ticket, check `.backlog/backlog.md` for duplicates. For each new ticket, append a line. **Position in the backlog IS the priority order** — add tickets in priority order (P1 first, then P2, etc.):
 
 ```
 - [ ] Testing setup [modernizer] → tickets/testing-setup.md
 - [ ] Package modernization [modernizer] → tickets/package-modernization.md
 ```
 
-#### Task Files (`specs/tickets/`)
+#### Task Files (`.backlog/tickets/`)
 
 Each task uses the canonical ticket template at `./references/templates/ticket-template.md` (bundled with this skill). Modernizer extends the base template with agent-execution sub-sections under Goals.
 
@@ -282,7 +282,7 @@ Each task uses the canonical ticket template at `./references/templates/ticket-t
 - All existing tests pass
 - No regressions introduced
 
-**Tech Details** — Use for speckit compatibility info:
+**Tech Details** — Use for SDD framework compatibility info (speckit-compatible by default):
 - Feature: [FEATURE_NAME]
 - Type: chore | enhancement | bugfix
 - Labels: [ai-readiness, tooling, testing, etc.]
@@ -298,7 +298,7 @@ After generating plans:
 3. Ask clarifying questions:
    - "Which tasks should be prioritized?"
    - "Any recommendations you want to skip?"
-   - "Should I create speckit tickets for these?"
+   - "Should I hand these off to your SDD framework (e.g., speckit)?"
 4. Offer to run available executors (matched to language)
 
 ---
@@ -346,15 +346,15 @@ Detailed recommendations are in language-specific reference files. Each file con
 
 ---
 
-## Integration with speckit
+## Integration with an SDD framework
 
-If speckit is available (`.specify/` exists), offer to:
+If an SDD framework is available (currently auto-detected via `.specify/`, which signals speckit), offer to:
 
-1. Convert tasks to speckit tickets
-2. Use speckit's task workflow
-3. Link to speckit constitution/principles
+1. Convert tasks into framework tickets
+2. Use the framework's task workflow
+3. Link to the framework's constitution/principles
 
-Task files are already structured to be speckit-compatible.
+Task files are already structured to be compatible with an SDD framework (speckit-compatible by default).
 
 ---
 
@@ -435,7 +435,7 @@ AI: Analyzing codebase for AI-readiness...
 
 ## Generated Plans
 
-Created in `specs/`:
+Created in `.backlog/`:
 - CHECKLIST.md (scorecard + task overview)
 - tickets/testing-setup.md (P1, Go, manual - no agent available)
 - tickets/golangci-lint.md (P1, Go, manual)
@@ -445,7 +445,7 @@ Created in `specs/`:
 
 1. No Go test scaffolder agent available - want me to create tasks for manual implementation?
 2. Should I prioritize backend (Go) or frontend (TypeScript) testing?
-3. Want me to create speckit tickets for these tasks?
+3. Want me to hand these off to your SDD framework (e.g., speckit)?
 ```
 
 ---

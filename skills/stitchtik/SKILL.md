@@ -6,7 +6,7 @@ user-invocable: true
 
 # stitchtik
 
-Analyze Google Stitch UI exports against the existing codebase and produce structured implementation tickets in `specs/tickets/`. Stitch exports contain screen mockups, optional generated HTML, and optional design system specs. The skill compares these against what already exists to determine the right ticket scope — avoiding tickets for work that's already done and grouping cross-cutting changes into single tickets.
+Analyze Google Stitch UI exports against the existing codebase and produce structured implementation tickets in `.backlog/tickets/`. Stitch exports contain screen mockups, optional generated HTML, and optional design system specs. The skill compares these against what already exists to determine the right ticket scope — avoiding tickets for work that's already done and grouping cross-cutting changes into single tickets.
 
 ## Stitch Export Format
 
@@ -56,7 +56,7 @@ Understand what's already built:
 - **Components** — shared components, UI library, layout primitives
 - **Design system** — Tailwind config, CSS variables, existing tokens
 - **Data flow** — API endpoints, models, what data the UI consumes
-- **Existing design docs** — check `specs/design-system.md` if it exists
+- **Existing design docs** — check `.backlog/design-system.md` if it exists
 - **Platform coverage** — determine what platforms the codebase currently supports (see below)
 
 #### Platform Detection
@@ -126,7 +126,7 @@ Order tickets using the atomic design principle — smallest building blocks fir
 4. **Organisms** — headers, navigation bars, sidebars, shared layouts
 5. **Pages** — full page-level tickets that compose the above
 
-Within the same level, order by how many other tickets depend on it (most dependents first). Note dependencies explicitly in each ticket so speckit can parallelize where possible.
+Within the same level, order by how many other tickets depend on it (most dependents first). Note dependencies explicitly in each ticket so the spec process can parallelize where possible.
 
 ### Platform-Aware Ticketing
 
@@ -175,7 +175,7 @@ After presenting the comparison and ticket plan, ask only questions where the mo
 - Library/icon/font choices (default to existing project)
 - Things clearly visible in the screenshot
 - Implementation details inferable from codebase patterns
-- Things that can be flagged as open questions for speckit to resolve
+- Things that can be flagged as open questions for the spec process to resolve
 
 Keep it to 2-3 questions max. If nothing is genuinely ambiguous, skip the interview and go straight to generating tickets.
 
@@ -183,7 +183,7 @@ Keep it to 2-3 questions max. If nothing is genuinely ambiguous, skip the interv
 
 ### Ticket Location
 
-Create in `specs/tickets/<ticket-name>/`:
+Create in `.backlog/tickets/<ticket-name>/`:
 - Use a **descriptive kebab-case slug** — e.g., `design-system-tokens`, `bottom-nav-bar`, `post-detail-redesign`. No numeric prefixes.
 - Implementation order is expressed through **position in the backlog** and **dependency references** inside each ticket — not in filenames.
 - Copy the relevant `screen.png` files into the ticket directory so the ticket is self-contained
@@ -223,7 +223,7 @@ Embed mockup images directly using markdown image syntax so the reader **sees** 
 - **No change:** Drag-and-drop reorder logic (dnd-kit)
 ```
 
-Always include file paths for existing components. This is a lookup table for speckit, not a work breakdown.
+Always include file paths for existing components. This is a lookup table for the spec process, not a work breakdown.
 
 #### Goals
 
@@ -243,7 +243,7 @@ Code paths and docs only. **No image paths** — those are embedded in Design:
 ```markdown
 ## References
 
-- Design system: `specs/design-system.md`
+- Design system: `.backlog/design-system.md`
 - Existing: `frontend/src/pages/HomePage.tsx`, `frontend/src/components/PostCard.tsx`
 ```
 
@@ -257,7 +257,7 @@ Cover:
 
 ### Backlog
 
-If `specs/backlog.md` exists, append one line per ticket. **Position in the backlog IS the implementation order** — add tickets in dependency order (design tokens first, shared components next, pages last):
+If `.backlog/backlog.md` exists, append one line per ticket. **Position in the backlog IS the implementation order** — add tickets in dependency order (design tokens first, shared components next, pages last):
 
 ```
 - [ ] Design system tokens [stitchtik] → tickets/design-system-tokens/ticket.md
@@ -265,7 +265,7 @@ If `specs/backlog.md` exists, append one line per ticket. **Position in the back
 - [ ] Post detail redesign [stitchtik] → tickets/post-detail-redesign/ticket.md
 ```
 
-If `specs/backlog.md` doesn't exist, create it with the entries.
+If `.backlog/backlog.md` doesn't exist, create it with the entries.
 
 ## Stitch Prompt Generator (separate action)
 
@@ -312,7 +312,7 @@ Structure as numbered sections. One structural change per prompt — if multiple
 - Extract real values from code.html/DESIGN.md when available — don't approximate
 - code.html is reference only — note this in tickets to prevent direct copying
 - **Prefer existing project choices over mockup choices.** If the mockup uses different icons, fonts, colors, or libraries than the project already has, default to the project's existing tools and note the mapping. The mockup is a design reference, not a technology spec.
-- Component Inventory is its own section (not under Goals) — it's a lookup table for speckit, not a work item
+- Component Inventory is its own section (not under Goals) — it's a lookup table for the spec process, not a work item
 - **Desktop/mobile differences go inline per component in Goals** — don't create a separate Responsive Requirements section that duplicates the goals
 - **Decide, don't ask.** Make ticket scope and priority decisions yourself using atomic design ordering. Present your decisions for confirmation — don't ask open-ended "what do you want?"
 - Shared component changes get ONE ticket noting all affected pages, not per-page tickets
